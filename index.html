@@ -255,6 +255,8 @@ function handleFile(input){
   reader.readAsDataURL(file);
 }
 
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyHFy5yW_MoEF39nf7PM2IuuG-xezls8A2KI5q78edBp5V4hoWoZgm7UjQtRpf0PdnTRQ/exec';
+
 function saveRegistration(data){
   try{
     const all=JSON.parse(localStorage.getItem('registrations')||'[]');
@@ -263,7 +265,18 @@ function saveRegistration(data){
   }catch(e){}
 }
 
-function submitForm(){
+async function sendToSheet(data){
+  try{
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+  }catch(e){ console.warn('Sheet sync failed:', e); }
+}
+
+async function submitForm(){
   const fname=document.getElementById('fname').value.trim();
   const lname=document.getElementById('lname').value.trim();
   const email=document.getElementById('email').value.trim();
@@ -287,13 +300,15 @@ function submitForm(){
   const newCount=incrementCount(date,start,end);
   const rate=isEvening(start)?250:150;
   const total=rate*durHours(start,end);
-  saveRegistration({
+  const regData={
     name:fname+' '+lname, email, phone,
     date:dateEl.options[dateEl.selectedIndex].text,
     slot:start+' – '+end, amount:'₱'+total.toLocaleString(),
     submitted:new Date().toLocaleString('en-PH'),
     slotFill:newCount+'/'+MAX_PER_SLOT
-  });
+  };
+  saveRegistration(regData);
+  await sendToSheet(regData);
   document.getElementById('successBox').style.display='block';
   btn.innerHTML='✅ Submitted';
 }

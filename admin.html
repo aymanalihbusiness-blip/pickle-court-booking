@@ -300,7 +300,15 @@ function getPassword(){ return localStorage.getItem('admin_password')||DEFAULT_P
 function getMaxPerSlot(){ return parseInt(localStorage.getItem('max_per_slot'))||3; }
 function getConfig(){ try{ const s=localStorage.getItem('admin_config'); return s?JSON.parse(s):[]; }catch(e){return[];} }
 function saveConfig(c){ localStorage.setItem('admin_config',JSON.stringify(c)); }
-function getRegistrations(){ try{ return JSON.parse(localStorage.getItem('registrations')||'[]'); }catch(e){return[];} }
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbybqk8PRCz1hJwUVvIu290jl2Lxt7U1GAmuba9aZIEo1HguItkMsk_03Il-BMMwUfvT5w/exec';
+
+async function fetchRegistrations(){
+  try{
+    const res = await fetch(SHEET_URL + '?t=' + Date.now());
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }catch(e){ return []; }
+}
 
 function login(){
   const pw=document.getElementById('pwInput').value;
@@ -345,20 +353,23 @@ function slotKey(date,start,end){ const c=s=>s.replace(/[\s:]/g,'_'); return 'bo
 function getCount(date,start,end){ return parseInt(localStorage.getItem(slotKey(date,start,end)))||0; }
 function formatDate(str){ const d=new Date(str+'T00:00:00'); return d.toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric',year:'numeric'}); }
 
-function renderAll(){ renderOverview(); renderDates(); renderRegistrations(); renderSettings(); }
+async function renderAll(){ renderOverview(); renderDates(); renderRegistrations(); renderSettings(); }
 
-function renderOverview(){
+async function renderOverview(){
   const config=getConfig();
-  const regs=getRegistrations();
   const max=getMaxPerSlot();
   let totalSlots=0, fullSlots=0, totalBooked=0;
   config.forEach(c=>{ c.slots.forEach(([s,e])=>{ totalSlots++; const cnt=getCount(c.date,s,e); totalBooked+=cnt; if(cnt>=max)fullSlots++; }); });
   document.getElementById('statsRow').innerHTML=`
     <div class="stat"><div class="stat-label">Total dates</div><div class="stat-val">${config.length}</div></div>
     <div class="stat"><div class="stat-label">Total slots</div><div class="stat-val">${totalSlots}</div></div>
-    <div class="stat"><div class="stat-label">Registrations</div><div class="stat-val">${regs.length}</div></div>
+    <div class="stat"><div class="stat-label">Registrations</div><div class="stat-val" id="regCount">—</div></div>
     <div class="stat"><div class="stat-label">Full slots</div><div class="stat-val" style="color:${fullSlots>0?'#c62828':'#2e7d32'}">${fullSlots}</div></div>
   `;
+  fetchRegistrations().then(regs=>{
+    const el=document.getElementById('regCount');
+    if(el) el.textContent=regs.length;
+  });
   let html='';
   if(!config.length){ html='<div class="empty-state">No dates scheduled.</div>'; }
   config.forEach(c=>{
@@ -505,32 +516,33 @@ function clearAllRegs(){
   localStorage.removeItem('registrations'); renderAll();
 }
 
-function renderRegistrations(){
-  const regs=getRegistrations();
+async function renderRegistrations(){
   const body=document.getElementById('regBody');
   const noMsg=document.getElementById('noRegMsg');
+  body.innerHTML='<tr><td colspan="9" style="text-align:center;color:#aaa;padding:2rem;">⏳ Loading from Google Sheet…</td></tr>';
+  noMsg.style.display='none';
+  const regs = await fetchRegistrations();
   if(!regs.length){ body.innerHTML=''; noMsg.style.display='block'; return; }
   noMsg.style.display='none';
   body.innerHTML=regs.map((r,i)=>`
     <tr>
       <td style="color:#aaa;">${i+1}</td>
-      <td style="font-weight:500;">${r.name}</td>
-      <td style="color:#1565c0;">${r.email}</td>
+      <td style="font-weight:500;">${r.name||'—'}</td>
+      <td style="color:#1565c0;">${r.email||'—'}</td>
       <td>${r.phone||'—'}</td>
-      <td style="white-space:nowrap;">${r.date}</td>
-      <td style="white-space:nowrap;">${r.slot}</td>
-      <td><span class="badge badge-green">${r.amount}</span></td>
-      <td style="color:#888;font-size:12px;white-space:nowrap;">${r.submitted}</td>
-      <td><span class="badge badge-blue">${r.slotFill}</span></td>
+      <td style="white-space:nowrap;">${r.date||'—'}</td>
+      <td style="white-space:nowrap;">${r.slot||'—'}</td>
+      <td><span class="badge badge-green">${r.amount||'—'}</span></td>
+      <td style="color:#888;font-size:12px;white-space:nowrap;">${r.submitted||'—'}</td>
     </tr>
   `).join('');
 }
 
-function exportCSV(){
-  const regs=getRegistrations();
+async function exportCSV(){
+  const regs = await fetchRegistrations();
   if(!regs.length)return alert('No registrations to export.');
-  const headers=['#','Name','Email','Phone','Date','Slot','Amount','Submitted','Slot Fill'];
-  const rows=regs.map((r,i)=>[i+1,r.name,r.email,r.phone||'',r.date,r.slot,r.amount,r.submitted,r.slotFill]);
+  const headers=['#','Name','Email','Phone','Date','Slot','Amount','Submitted'];
+  const rows=regs.map((r,i)=>[i+1,r.name||'',r.email||'',r.phone||'',r.date||'',r.slot||'',r.amount||'',r.submitted||'']);
   const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const url=URL.createObjectURL(blob);
