@@ -105,7 +105,7 @@
   </div>
   <div class="row">
     <div class="field"><label for="email">Email</label><input type="email" id="email" placeholder="juan@email.com" /></div>
-    <div class="field"><label for="phone">Phone</label><input type="tel" id="phone" placeholder="09XX XXX XXXX" /></div>
+    <div class="field"><label for="phone">Phone</label><input type="tel" id="phone" placeholder="09XX XXX XXXX" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)" /></div>
   </div>
   <div class="divider"></div>
   <div class="field">
@@ -155,7 +155,8 @@
 </div>
 
 <script>
-const MAX_PER_SLOT = 3;
+function getMaxPerSlot(){ return parseInt(localStorage.getItem("max_per_slot"))||3; }
+const MAX_PER_SLOT = getMaxPerSlot();
 
 function getConfig() {
   try {
@@ -255,7 +256,7 @@ function handleFile(input){
   reader.readAsDataURL(file);
 }
 
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyHFy5yW_MoEF39nf7PM2IuuG-xezls8A2KI5q78edBp5V4hoWoZgm7UjQtRpf0PdnTRQ/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyOe7YBQaepO7065pjU43PTNp8Df_o4nCm4OSSTr2MUZf52F7ODOo8iNdOcgHfiDjmT8Q/exec';
 
 function saveRegistration(data){
   try{
@@ -276,6 +277,15 @@ async function sendToSheet(data){
   }catch(e){ console.warn('Sheet sync failed:', e); }
 }
 
+function readFileAsBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>resolve(e.target.result);
+    reader.onerror=()=>reject(new Error('File read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
 async function submitForm(){
   const fname=document.getElementById('fname').value.trim();
   const lname=document.getElementById('lname').value.trim();
@@ -286,6 +296,7 @@ async function submitForm(){
   const slot=document.getElementById('slot').value;
   const file=document.getElementById('gcashUpload').files[0];
   if(!fname||!lname)return alert('Please enter your full name.');
+  if(phone.length!==11||!/^[0-9]{11}$/.test(phone))return alert('Please enter a valid 11-digit mobile number (numbers only).');
   if(!email)return alert('Please enter your email address.');
   if(!date)return alert('Please select a date.');
   if(!slot)return alert('Please select a time slot.');
@@ -296,7 +307,10 @@ async function submitForm(){
     dateEl.dispatchEvent(new Event('change')); return;
   }
   const btn=document.getElementById('submitBtn');
-  btn.disabled=true; btn.innerHTML='⏳ Submitting…';
+  btn.disabled=true; btn.innerHTML='⏳ Uploading screenshot…';
+  let screenshotBase64='';
+  try{ screenshotBase64=await readFileAsBase64(file); }catch(e){}
+  btn.innerHTML='⏳ Submitting…';
   const newCount=incrementCount(date,start,end);
   const rate=isEvening(start)?250:150;
   const total=rate*durHours(start,end);
@@ -305,9 +319,11 @@ async function submitForm(){
     date:dateEl.options[dateEl.selectedIndex].text,
     slot:start+' – '+end, amount:'₱'+total.toLocaleString(),
     submitted:new Date().toLocaleString('en-PH'),
-    slotFill:newCount+'/'+MAX_PER_SLOT
+    slotFill:newCount+'/'+MAX_PER_SLOT,
+    screenshot:screenshotBase64,
+    screenshotType:file.type
   };
-  saveRegistration(regData);
+  saveRegistration({...regData, screenshot:'[image]'});
   await sendToSheet(regData);
   document.getElementById('successBox').style.display='block';
   btn.innerHTML='✅ Submitted';

@@ -194,7 +194,7 @@
             <thead>
               <tr>
                 <th>#</th><th>Name</th><th>Email</th><th>Phone</th>
-                <th>Date</th><th>Slot</th><th>Amount</th><th>Submitted</th><th>Fill</th>
+                <th>Date</th><th>Slot</th><th>Amount</th><th>Submitted</th><th>Screenshot</th>
               </tr>
             </thead>
             <tbody id="regBody"></tbody>
@@ -244,7 +244,7 @@
 function getMaxPerSlot(){ return parseInt(localStorage.getItem('max_per_slot'))||3; }
 function getConfig(){ try{ const s=localStorage.getItem('admin_config'); return s?JSON.parse(s):[]; }catch(e){return[];} }
 function saveConfig(c){ localStorage.setItem('admin_config',JSON.stringify(c)); }
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbybqk8PRCz1hJwUVvIu290jl2Lxt7U1GAmuba9aZIEo1HguItkMsk_03Il-BMMwUfvT5w/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyOe7YBQaepO7065pjU43PTNp8Df_o4nCm4OSSTr2MUZf52F7ODOo8iNdOcgHfiDjmT8Q/exec';
 
 async function fetchRegistrations(){
   try{
@@ -460,6 +460,7 @@ async function renderRegistrations(){
       <td style="white-space:nowrap;">${r.slot||'—'}</td>
       <td><span class="badge badge-green">${r.amount||'—'}</span></td>
       <td style="color:#888;font-size:12px;white-space:nowrap;">${r.submitted||'—'}</td>
+      <td>${r.screenshot&&r.screenshot!=='—'?`<a href="${r.screenshot}" target="_blank" style="font-size:12px;color:#1565c0;text-decoration:none;background:#e8f4fd;padding:3px 8px;border-radius:6px;white-space:nowrap;">📎 View</a>`:'—'}</td>
     </tr>
   `).join('');
 }
