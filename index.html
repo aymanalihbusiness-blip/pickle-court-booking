@@ -130,6 +130,9 @@
     <div class="pay-row"><span class="pay-label">Account name</span><span class="pay-val">Ayman Alih</span></div>
     <div class="pay-row"><span class="pay-label">Amount to send</span><span class="pay-val" id="amountOut">—</span></div>
   </div>
+  <div id="noRefundNotice" class="notice" style="display:none;background:#fff8e1;color:#e65100;border:1px solid #ffcc80;margin-top:10px;font-size:12px;border-radius:8px;padding:9px 12px;line-height:1.5;">
+    ⚠️ <strong>No Refund. No Reschedule.</strong> Once you submit this booking, your slot is confirmed and your payment is non-refundable. Please make sure your schedule is final before proceeding.
+  </div>
   <div class="divider"></div>
   <div class="field">
     <label>GCash payment screenshot</label>
@@ -146,6 +149,11 @@
       <div style="font-size:12px;color:#999;">PNG, JPG or HEIC — max 25MB</div>
     </div>
     <img class="preview-img" id="previewImg" alt="GCash payment preview" />
+  </div>
+  <div class="field" id="refNumField" style="display:none;margin-top:12px;">
+    <label for="refNum" style="color:#c62828;">GCash reference number <span style="font-size:10px;background:#ffebee;padding:2px 6px;border-radius:4px;">Required</span></label>
+    <input type="text" id="refNum" placeholder="e.g. 1234 5678 9012 3" maxlength="19" inputmode="numeric" style="border-color:#ffcdd2;" />
+    <div style="font-size:11px;color:#888;margin-top:4px;">Found in your GCash app under Transaction History</div>
   </div>
   <button class="submit-btn" id="submitBtn" onclick="submitForm()">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -209,6 +217,7 @@ document.getElementById('date').addEventListener('change', function(){
   slotSel.innerHTML='<option value="" disabled selected>— Pick a time slot —</option>';
   payBox.style.display='none';
   document.getElementById('eveNotice').style.display='none';
+  document.getElementById('noRefundNotice').style.display='none';
   const entry=getConfig().find(c=>c.date===this.value);
   if(!entry)return;
   entry.slots.forEach(([start,end])=>{
@@ -238,6 +247,7 @@ document.getElementById('slot').addEventListener('change', function(){
   document.getElementById('amountOut').textContent='₱'+(rate*hours).toLocaleString();
   payBox.style.display='block';
   document.getElementById('eveNotice').style.display=eve?'block':'none';
+  document.getElementById('noRefundNotice').style.display='block';
 });
 
 function copyNum(){
@@ -251,11 +261,17 @@ function copyNum(){
 function handleFile(input){
   const file=input.files[0]; if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{const p=document.getElementById('previewImg');p.src=e.target.result;p.style.display='block';};
+  reader.onload=e=>{
+    const p=document.getElementById('previewImg');
+    p.src=e.target.result; p.style.display='block';
+    const refField=document.getElementById('refNumField');
+    refField.style.display='block';
+    refField.scrollIntoView({behavior:'smooth', block:'nearest'});
+  };
   reader.readAsDataURL(file);
 }
 
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwPMMMevkWonFN0E-8XNcO_0-8zJ8_Ml6AKww-pToaklz12GoEBZdEw6eMoD-kYqzhsog/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycby1qWkn9zAZCKyVD-5w8CBavC9XqS4qmU6FqUgu3yv8upnDddLIZIHtidgYEHjnZnLNIA/exec';
 
 function saveRegistration(data){
   try{
@@ -275,7 +291,7 @@ async function sendToSheet(data){
         name:data.name, email:data.email, phone:data.phone,
         date:data.date, slot:data.slot, amount:data.amount,
         submitted:data.submitted, slotFill:data.slotFill,
-        uid:data.uid
+        refNum:data.refNum, uid:data.uid
       })
     });
   }catch(e){ console.warn('Sheet text sync failed:',e); }
@@ -354,6 +370,8 @@ async function submitForm(){
   if(!date)return alert('Please select a date.');
   if(!slot)return alert('Please select a time slot.');
   if(!file)return alert('Please upload your GCash screenshot.');
+  const refNum=document.getElementById('refNum').value.trim();
+  if(!refNum)return alert('Please enter your GCash reference number.');
   const [start,end]=slot.split('|');
   if(getCount(date,start,end)>=getMaxPerSlot()){
     alert('Sorry, this slot just filled up. Please choose another.');
@@ -368,7 +386,7 @@ async function submitForm(){
   const rate=isEvening(start)?250:150;
   const total=rate*durHours(start,end);
   const regData={
-    name:fname+' '+lname, email, phone,
+    name:fname+' '+lname, email, phone, refNum,
     date:dateEl.options[dateEl.selectedIndex].text,
     slot:start+' – '+end, amount:'₱'+total.toLocaleString(),
     submitted:new Date().toLocaleString('en-PH'),
