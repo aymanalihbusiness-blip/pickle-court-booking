@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — Court Booking</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f4f0; color: #1a1a1a; min-height: 100vh;
+  }
+
+
+
+  /* ── MAIN LAYOUT ── */
+  .main { display: none; }
+  .topbar {
+    background: #1a1a1a; color: #fff; padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between; height: 56px;
+  }
+  .topbar-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+
+  .tabs {
+    background: #fff; border-bottom: 1px solid #e4e4e0;
+    display: flex; padding: 0 2rem; gap: 0;
+  }
+  .tab {
+    padding: 14px 20px; font-size: 14px; font-weight: 500; color: #888;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab:hover { color: #333; }
+  .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+  .content { padding: 2rem; max-width: 900px; margin: 0 auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: #fff; border-radius: 12px; border: 1px solid #e4e4e0;
+    padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── STAT CARDS ── */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .stat { background: #fff; border-radius: 10px; border: 1px solid #e4e4e0; padding: 1rem; }
+  .stat-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .stat-val { font-size: 28px; font-weight: 600; color: #1a1a1a; }
+
+  /* ── FORMS ── */
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .field-row-3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 10px; }
+  label.lbl { display: block; font-size: 11px; font-weight: 600; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  input.inp, select.inp {
+    width: 100%; padding: 8px 12px; font-size: 14px;
+    border: 1px solid #ddd; border-radius: 8px; outline: none;
+    background: #fff; color: #1a1a1a; appearance: none;
+  }
+  input.inp:focus, select.inp:focus { border-color: #555; }
+  .btn {
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    border-radius: 8px; cursor: pointer; border: none;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-dark { background: #1a1a1a; color: #fff; }
+  .btn-danger { background: #fff0f0; color: #c62828; border: 1px solid #ffcdd2; }
+  .btn-success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ── DATE LIST ── */
+  .date-block { border: 1px solid #e4e4e0; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .date-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #fafaf8; border-bottom: 1px solid #e4e4e0;
+  }
+  .date-label { font-size: 14px; font-weight: 600; }
+  .date-actions { display: flex; gap: 8px; align-items: center; }
+  .slot-list { padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .slot-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: #f8f8f6; border-radius: 8px;
+    font-size: 13px;
+  }
+  .slot-item-left { display: flex; flex-direction: column; gap: 2px; }
+  .slot-time { font-weight: 500; }
+  .slot-meta { font-size: 11px; color: #888; }
+  .slot-count { font-size: 12px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+  .count-ok { background: #e8f5e9; color: #2e7d32; }
+  .count-warn { background: #fff8e1; color: #f57f17; }
+  .count-full { background: #ffebee; color: #c62828; }
+  .add-slot-row { padding: 10px 16px; border-top: 1px solid #f0f0ec; }
+
+  /* ── REGISTRATIONS TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e4e4e0; white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f4f4f0; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafaf8; }
+  .empty-state { text-align: center; padding: 3rem; color: #aaa; font-size: 14px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+  .badge-blue { background: #e8f4fd; color: #1565c0; }
+  .badge-green { background: #e8f5e9; color: #2e7d32; }
+
+  /* ── RESET PANEL ── */
+  .reset-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid #f4f4f0; font-size: 14px;
+  }
+  .reset-item:last-child { border-bottom: none; }
+  .reset-label { color: #555; }
+  .divider { height: 1px; background: #f0f0ec; margin: 1rem 0; }
+
+  @media (max-width: 600px) {
+    .content { padding: 1rem; }
+    .field-row, .field-row-3 { grid-template-columns: 1fr; }
+    .tabs { padding: 0 1rem; }
+    .topbar { padding: 0 1rem; }
+  }
+</style>
+</head>
+<body>
+
+
+
+<!-- MAIN -->
+<div class="main" id="mainApp" style="display:block;">
+  <div class="topbar">
+    <div class="topbar-title">⚙️ Court Booking Admin</div>
+
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">📊 Overview</div>
+    <div class="tab" onclick="switchTab('dates')">📅 Dates & Slots</div>
+    <div class="tab" onclick="switchTab('registrations')">📋 Registrations</div>
+    <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="panel active" id="panel-overview">
+      <div class="stats" id="statsRow"></div>
+      <div class="card">
+        <div class="card-title">📅 Slot fill status</div>
+        <div id="slotOverview"></div>
+      </div>
+    </div>
+
+    <!-- DATES & SLOTS -->
+    <div class="panel" id="panel-dates">
+      <div class="card">
+        <div class="card-title">➕ Add a new date</div>
+        <div class="field-row">
+          <div>
+            <label class="lbl">Date</label>
+            <input type="date" class="inp" id="newDate" />
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-dark" onclick="addDate()">Add date</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📅 Available dates</div>
+        <div id="dateList"></div>
+        <div class="empty-state" id="noDateMsg" style="display:none;">No dates added yet. Add one above.</div>
+      </div>
+    </div>
+
+    <!-- REGISTRATIONS -->
+    <div class="panel" id="panel-registrations">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <div class="card-title" style="margin:0;">📋 All registrations</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-success btn-sm" onclick="exportCSV()">⬇️ Export CSV</button>
+            <button class="btn btn-danger btn-sm" onclick="clearAllRegs()">🗑 Clear all</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="regTable">
+            <thead>
+              <tr>
+                <th>#</th><th>Name</th><th>Email</th><th>Phone</th>
+                <th>Date</th><th>Slot</th><th>Amount</th><th>Submitted</th><th>GCash Ref #</th><th>Screenshot</th>
+              </tr>
+            </thead>
+            <tbody id="regBody"></tbody>
+          </table>
+          <div class="empty-state" id="noRegMsg">No registrations yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="card">
+        <div class="card-title">⚙️ Booking settings</div>
+        <div style="margin-bottom:1rem;">
+          <label class="lbl">Max bookings per slot</label>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input type="number" class="inp" id="maxSlotInput" min="1" max="20" style="max-width:100px;" />
+            <button class="btn btn-dark" onclick="saveMaxSlot()">Save</button>
+          </div>
+          <div style="font-size:12px;color:#888;margin-top:6px;">Currently: <strong id="currentMax"></strong> per slot</div>
+        </div>
+
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗑 Danger zone</div>
+        <div class="reset-item">
+          <span class="reset-label">Reset ALL slot booking counts to zero</span>
+          <button class="btn btn-danger btn-sm" onclick="resetAllCounts()">Reset counts</button>
+        </div>
+        <div class="reset-item">
+          <span class="reset-label">Delete all dates and slots</span>
+          <button class="btn btn-danger btn-sm" onclick="clearAllDates()">Clear schedule</button>
+        </div>
+        <div class="reset-item">
+          <span class="reset-label">Delete all registrations</span>
+          <button class="btn btn-danger btn-sm" onclick="clearAllRegs()">Clear registrations</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+function getMaxPerSlot(){ return parseInt(localStorage.getItem('max_per_slot'))||3; }
+function getConfig(){ try{ const s=localStorage.getItem('admin_config'); return s?JSON.parse(s):[]; }catch(e){return[];} }
+function saveConfig(c){
+  localStorage.setItem('admin_config',JSON.stringify(c));
+  syncConfigToSheet(c);
+}
+
+async function syncConfigToSheet(c){
+  try{
+    await fetch(SHEET_URL,{
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({saveConfig:true, config:c})
+    });
+  }catch(e){ console.warn('Config sync failed:',e); }
+}
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycby8b3BHN9aCQEYkpeSfxE40S8SHdKk2MBGmV1OklqcJ05wv77yJ77JkhTvfrSrtAcnbJg/exec';
+
+async function fetchRegistrations(){
+  try{
+    const res = await fetch(SHEET_URL + '?t=' + Date.now());
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }catch(e){ return []; }
+}
+
+
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['overview','dates','registrations','settings'];
+    t.classList.toggle('active', names[i]===name);
+  });
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='overview') renderOverview();
+  if(name==='dates') renderDates();
+  if(name==='registrations') renderRegistrations();
+  if(name==='settings') renderSettings();
+}
+
+function to24(t){
+  const [time,period]=t.split(' '); let [h,m]=time.split(':').map(Number);
+  if(period==='PM'&&h!==12)h+=12; if(period==='AM'&&h===12)h=0; return h+(m/60);
+}
+function isEvening(t){return to24(t)>=17;}
+function durHours(s,e){return to24(e)-to24(s);}
+function slotKey(date,start,end){ const c=s=>s.replace(/[\s:]/g,'_'); return 'booking__'+date+'__'+c(start)+'__'+c(end); }
+function getCount(date,start,end){ return parseInt(localStorage.getItem(slotKey(date,start,end)))||0; }
+function formatDate(str){ const d=new Date(str+'T00:00:00'); return d.toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric',year:'numeric'}); }
+
+async function renderAll(){ renderOverview(); renderDates(); renderRegistrations(); renderSettings(); }
+
+async function renderOverview(){
+  const config=getConfig();
+  const max=getMaxPerSlot();
+  let totalSlots=0, fullSlots=0, totalBooked=0;
+  config.forEach(c=>{ c.slots.forEach(([s,e])=>{ totalSlots++; const cnt=getCount(c.date,s,e); totalBooked+=cnt; if(cnt>=max)fullSlots++; }); });
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat"><div class="stat-label">Total dates</div><div class="stat-val">${config.length}</div></div>
+    <div class="stat"><div class="stat-label">Total slots</div><div class="stat-val">${totalSlots}</div></div>
+    <div class="stat"><div class="stat-label">Registrations</div><div class="stat-val" id="regCount">—</div></div>
+    <div class="stat"><div class="stat-label">Full slots</div><div class="stat-val" style="color:${fullSlots>0?'#c62828':'#2e7d32'}">${fullSlots}</div></div>
+  `;
+  fetchRegistrations().then(regs=>{
+    const el=document.getElementById('regCount');
+    if(el) el.textContent=regs.length;
+  });
+  let html='';
+  if(!config.length){ html='<div class="empty-state">No dates scheduled.</div>'; }
+  config.forEach(c=>{
+    html+=`<div style="margin-bottom:12px;"><div style="font-size:13px;font-weight:600;margin-bottom:6px;color:#555;">${formatDate(c.date)}</div>`;
+    c.slots.forEach(([s,e])=>{
+      const cnt=getCount(c.date,s,e);
+      const pct=Math.round((cnt/max)*100);
+      const color=cnt>=max?'#c62828':cnt>=(max-1)?'#f57f17':'#2e7d32';
+      const bgColor=cnt>=max?'#c62828':cnt>=(max-1)?'#fb8c00':'#43a047';
+      const rate=isEvening(s)?250:150; const dur=durHours(s,e);
+      html+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="font-size:13px;min-width:180px;">${s} – ${e} <span style="color:#aaa;font-size:11px;">(${dur===1?'1hr':'2hrs'}, ₱${(rate*dur).toLocaleString()})</span></div>
+        <div style="flex:1;background:#f0f0ec;border-radius:20px;height:8px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${bgColor};border-radius:20px;transition:width 0.3s;"></div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:${color};min-width:40px;">${cnt}/${max}</div>
+        ${cnt>0?`<button class="btn btn-danger btn-sm" onclick="resetSlot('${c.date}','${s}','${e}')">Reset</button>`:''}
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('slotOverview').innerHTML=html;
+}
+
+function renderDates(){
+  const config=getConfig();
+  const max=getMaxPerSlot();
+  const list=document.getElementById('dateList');
+  const noMsg=document.getElementById('noDateMsg');
+  if(!config.length){ list.innerHTML=''; noMsg.style.display='block'; return; }
+  noMsg.style.display='none';
+  let html='';
+  config.forEach((c,di)=>{
+    html+=`<div class="date-block">
+      <div class="date-header">
+        <div class="date-label">📅 ${formatDate(c.date)}</div>
+        <div class="date-actions">
+          <span style="font-size:12px;color:#888;">${c.slots.length} slot${c.slots.length!==1?'s':''}</span>
+          <button class="btn btn-danger btn-sm" onclick="removeDate(${di})">Remove date</button>
+        </div>
+      </div>
+      <div class="slot-list">`;
+    if(!c.slots.length) html+='<div style="font-size:13px;color:#aaa;padding:4px 0;">No slots — add one below.</div>';
+    c.slots.forEach(([s,e],si)=>{
+      const cnt=getCount(c.date,s,e);
+      const cls=cnt>=max?'count-full':cnt>=(max-1)?'count-warn':'count-ok';
+      const rate=isEvening(s)?250:150; const dur=durHours(s,e);
+      html+=`<div class="slot-item">
+        <div class="slot-item-left">
+          <div class="slot-time">${s} – ${e}</div>
+          <div class="slot-meta">${dur===1?'1 hour':'2 hours'} · ₱${(rate*dur).toLocaleString()} · ${isEvening(s)?'Evening rate':'Day rate'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="slot-count ${cls}">${cnt}/${max}</span>
+          <button class="btn btn-danger btn-sm" onclick="removeSlot(${di},${si})">Remove</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>
+      <div class="add-slot-row">
+        <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Add slot</div>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+          <div>
+            <label class="lbl">Start time</label>
+            <select class="inp" id="startTime_${di}" style="width:130px;">
+              <option value="">Start</option>
+              ${['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'].map(t=>`<option value="${t}">${t}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="lbl">End time</label>
+            <select class="inp" id="endTime_${di}" style="width:130px;">
+              <option value="">End</option>
+              ${['10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM','9:00 PM'].map(t=>`<option value="${t}">${t}</option>`).join('')}
+            </select>
+          </div>
+          <button class="btn btn-dark" onclick="addSlot(${di})">Add slot</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  list.innerHTML=html;
+}
+
+function addDate(){
+  const val=document.getElementById('newDate').value;
+  if(!val)return alert('Please pick a date.');
+  const config=getConfig();
+  if(config.find(c=>c.date===val))return alert('That date is already added.');
+  config.push({date:val,slots:[]});
+  config.sort((a,b)=>a.date.localeCompare(b.date));
+  saveConfig(config);
+  document.getElementById('newDate').value='';
+  renderDates(); renderOverview();
+}
+
+function removeDate(di){
+  if(!confirm('Remove this date and all its slots?'))return;
+  const config=getConfig(); config.splice(di,1); saveConfig(config);
+  renderDates(); renderOverview();
+}
+
+function addSlot(di){
+  const start=document.getElementById('startTime_'+di).value;
+  const end=document.getElementById('endTime_'+di).value;
+  if(!start||!end)return alert('Please select both start and end times.');
+  if(to24(end)<=to24(start))return alert('End time must be after start time.');
+  const hrs=to24(end)-to24(start);
+  if(hrs>2)return alert('Maximum slot duration is 2 hours.');
+  if(hrs<1)return alert('Minimum slot duration is 1 hour.');
+  const config=getConfig();
+  const exists=config[di].slots.find(([s,e])=>s===start&&e===end);
+  if(exists)return alert('That slot already exists.');
+  config[di].slots.push([start,end]);
+  saveConfig(config);
+  renderDates(); renderOverview();
+}
+
+function removeSlot(di,si){
+  if(!confirm('Remove this slot?'))return;
+  const config=getConfig(); config[di].slots.splice(si,1); saveConfig(config);
+  renderDates(); renderOverview();
+}
+
+function resetSlot(date,start,end){
+  if(!confirm('Reset booking count for '+start+' – '+end+' to 0?'))return;
+  localStorage.removeItem(slotKey(date,start,end));
+  renderOverview(); renderDates();
+}
+
+function resetAllCounts(){
+  if(!confirm('Reset ALL slot counts to zero? This does not delete registrations.'))return;
+  Object.keys(localStorage).filter(k=>k.startsWith('booking__')).forEach(k=>localStorage.removeItem(k));
+  renderAll();
+}
+
+function clearAllDates(){
+  if(!confirm('Delete ALL dates and slots? This cannot be undone.'))return;
+  saveConfig([]); renderAll();
+}
+
+function clearAllRegs(){
+  if(!confirm('Delete ALL registrations? This cannot be undone.'))return;
+  localStorage.removeItem('registrations'); renderAll();
+}
+
+async function renderRegistrations(){
+  const body=document.getElementById('regBody');
+  const noMsg=document.getElementById('noRegMsg');
+  body.innerHTML='<tr><td colspan="9" style="text-align:center;color:#aaa;padding:2rem;">⏳ Loading from Google Sheet…</td></tr>';
+  noMsg.style.display='none';
+  const regs = await fetchRegistrations();
+  if(!regs.length){ body.innerHTML=''; noMsg.style.display='block'; return; }
+  noMsg.style.display='none';
+  body.innerHTML=regs.map((r,i)=>`
+    <tr>
+      <td style="color:#aaa;">${i+1}</td>
+      <td style="font-weight:500;">${r.name||'—'}</td>
+      <td style="color:#1565c0;">${r.email||'—'}</td>
+      <td>${r.phone||'—'}</td>
+      <td style="white-space:nowrap;">${r.date||'—'}</td>
+      <td style="white-space:nowrap;">${r.slot||'—'}</td>
+      <td><span class="badge badge-green">${r.amount||'—'}</span></td>
+      <td style="color:#888;font-size:12px;white-space:nowrap;">${r.submitted||'—'}</td>
+      <td style="font-weight:500;color:#1a1a1a;">${r.refNum||'—'}</td>
+      <td>${r.screenshot&&r.screenshot!=='—'?`<a href="${r.screenshot}" target="_blank" style="font-size:12px;color:#1565c0;text-decoration:none;background:#e8f4fd;padding:3px 8px;border-radius:6px;white-space:nowrap;">📎 View</a>`:'—'}</td>
+    </tr>
+  `).join('');
+}
+
+async function exportCSV(){
+  const regs = await fetchRegistrations();
+  if(!regs.length)return alert('No registrations to export.');
+  const headers=['#','Name','Email','Phone','Date','Slot','Amount','Submitted'];
+  const rows=regs.map((r,i)=>[i+1,r.name||'',r.email||'',r.phone||'',r.date||'',r.slot||'',r.amount||'',r.submitted||'']);
+  const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='registrations.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderSettings(){
+  const max=getMaxPerSlot();
+  document.getElementById('maxSlotInput').value=max;
+  document.getElementById('currentMax').textContent=max+' bookings';
+}
+
+function saveMaxSlot(){
+  const val=parseInt(document.getElementById('maxSlotInput').value);
+  if(!val||val<1)return alert('Enter a valid number.');
+  localStorage.setItem('max_per_slot',String(val));
+  renderSettings(); renderOverview(); renderDates();
+  alert('Max per slot updated to '+val+'.');
+}
+
+
+renderAll();
+</script>
+</body>
+</html>
