@@ -266,7 +266,7 @@ function saveRegistration(data){
 }
 
 async function sendToSheet(data){
-  // Step 1 — send text data only (fast, reliable)
+  // Step 1 — send text data via POST (small payload, reliable)
   try{
     await fetch(SHEET_URL, {
       method:'POST', mode:'no-cors',
@@ -280,22 +280,40 @@ async function sendToSheet(data){
     });
   }catch(e){ console.warn('Sheet text sync failed:',e); }
 
-  // Step 2 — send screenshot separately for Drive upload
+  // Step 2 — send screenshot via POST with smaller compressed image
   if(data.screenshot){
     try{
+      // Extra compress to ensure small payload
+      const smallImg = await recompressSmall(data.screenshot);
       await fetch(SHEET_URL, {
         method:'POST', mode:'no-cors',
         headers:{'Content-Type':'text/plain'},
         body:JSON.stringify({
           updateScreenshot:true,
-          uid:data.uid,
+          uid:String(data.uid),
           name:data.name,
-          screenshot:data.screenshot,
-          screenshotType:data.screenshotType
+          screenshot:smallImg
         })
       });
     }catch(e){ console.warn('Drive upload failed:',e); }
   }
+}
+
+function recompressSmall(base64){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      let w=img.width, h=img.height;
+      const MAX=800;
+      if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',0.5));
+    };
+    img.onerror=()=>resolve(base64);
+    img.src=base64;
+  });
 }
 
 function compressImage(file){
@@ -357,7 +375,7 @@ async function submitForm(){
     slotFill:newCount+'/'+getMaxPerSlot(),
     screenshot:screenshotBase64,
     screenshotType:"image/jpeg",
-    uid:Date.now()
+    uid:String(Date.now())
   };
   saveRegistration({...regData, screenshot:'[image]'});
   await sendToSheet(regData);
