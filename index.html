@@ -270,7 +270,7 @@ async function sendToSheet(data){
     await fetch(SHEET_URL, {
       method: 'POST',
       mode: 'no-cors',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type':'text/plain'},
       body: JSON.stringify(data)
     });
   }catch(e){ console.warn('Sheet sync failed:', e); }
