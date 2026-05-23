@@ -11,32 +11,7 @@
     background: #f4f4f0; color: #1a1a1a; min-height: 100vh;
   }
 
-  /* ── LOGIN ── */
-  .login-screen {
-    min-height: 100vh; display: flex;
-    align-items: center; justify-content: center; padding: 1rem;
-  }
-  .login-card {
-    background: #fff; border-radius: 16px; border: 1px solid #e4e4e0;
-    padding: 2rem; width: 100%; max-width: 360px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.07); text-align: center;
-  }
-  .login-icon { font-size: 36px; margin-bottom: 12px; }
-  .login-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-  .login-sub { font-size: 13px; color: #777; margin-bottom: 1.5rem; }
-  .login-input {
-    width: 100%; padding: 10px 14px; font-size: 15px;
-    border: 1px solid #ddd; border-radius: 8px; outline: none;
-    margin-bottom: 12px; text-align: center; letter-spacing: 3px;
-  }
-  .login-input:focus { border-color: #555; }
-  .login-btn {
-    width: 100%; padding: 10px; font-size: 15px; font-weight: 600;
-    background: #1a1a1a; color: #fff; border: none; border-radius: 8px;
-    cursor: pointer;
-  }
-  .login-btn:hover { background: #333; }
-  .login-error { font-size: 13px; color: #c62828; margin-top: 8px; display: none; }
+
 
   /* ── MAIN LAYOUT ── */
   .main { display: none; }
@@ -46,12 +21,7 @@
   }
   .topbar-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .topbar-right { display: flex; align-items: center; gap: 12px; }
-  .logout-btn {
-    font-size: 13px; padding: 6px 14px; background: transparent;
-    border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;
-    color: #fff; cursor: pointer; transition: background 0.15s;
-  }
-  .logout-btn:hover { background: rgba(255,255,255,0.1); }
+
 
   .tabs {
     background: #fff; border-bottom: 1px solid #e4e4e0;
@@ -160,26 +130,13 @@
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="login-screen" id="loginScreen">
-  <div class="login-card">
-    <div class="login-icon">🔐</div>
-    <div class="login-title">Admin Panel</div>
-    <div class="login-sub">Court Booking Management</div>
-    <input type="password" class="login-input" id="pwInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()" />
-    <button class="login-btn" onclick="login()">Enter</button>
-    <div class="login-error" id="loginError">Wrong password. Try again.</div>
-  </div>
-</div>
+
 
 <!-- MAIN -->
-<div class="main" id="mainApp">
+<div class="main" id="mainApp" style="display:block;">
   <div class="topbar">
     <div class="topbar-title">⚙️ Court Booking Admin</div>
-    <div class="topbar-right">
-      <span style="font-size:13px;color:rgba(255,255,255,0.5);">ayman@admin</span>
-      <button class="logout-btn" onclick="logout()">Log out</button>
-    </div>
+
   </div>
 
   <div class="tabs">
@@ -259,14 +216,7 @@
           </div>
           <div style="font-size:12px;color:#888;margin-top:6px;">Currently: <strong id="currentMax"></strong> per slot</div>
         </div>
-        <div class="divider"></div>
-        <div style="margin-bottom:1rem;">
-          <label class="lbl">Change admin password</label>
-          <div style="display:flex;gap:10px;align-items:center;">
-            <input type="password" class="inp" id="newPwInput" placeholder="New password" style="max-width:200px;" />
-            <button class="btn btn-dark" onclick="changePassword()">Update</button>
-          </div>
-        </div>
+
       </div>
 
       <div class="card">
@@ -290,13 +240,7 @@
 </div>
 
 <script>
-/* ══════════════════════════════════════════
-   CONFIG — change your password here
-══════════════════════════════════════════ */
-const DEFAULT_PASSWORD = 'courtadmin2026';
-/* ══════════════════════════════════════════ */
 
-function getPassword(){ return localStorage.getItem('admin_password')||DEFAULT_PASSWORD; }
 function getMaxPerSlot(){ return parseInt(localStorage.getItem('max_per_slot'))||3; }
 function getConfig(){ try{ const s=localStorage.getItem('admin_config'); return s?JSON.parse(s):[]; }catch(e){return[];} }
 function saveConfig(c){ localStorage.setItem('admin_config',JSON.stringify(c)); }
@@ -310,25 +254,7 @@ async function fetchRegistrations(){
   }catch(e){ return []; }
 }
 
-function login(){
-  const pw=document.getElementById('pwInput').value;
-  const err=document.getElementById('loginError');
-  if(pw===getPassword()){
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('mainApp').style.display='block';
-    renderAll();
-  } else {
-    err.style.display='block';
-    document.getElementById('pwInput').value='';
-    document.getElementById('pwInput').focus();
-  }
-}
-function logout(){
-  document.getElementById('mainApp').style.display='none';
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('pwInput').value='';
-  document.getElementById('loginError').style.display='none';
-}
+
 
 function switchTab(name){
   document.querySelectorAll('.tab').forEach((t,i)=>{
@@ -565,13 +491,8 @@ function saveMaxSlot(){
   alert('Max per slot updated to '+val+'.');
 }
 
-function changePassword(){
-  const pw=document.getElementById('newPwInput').value.trim();
-  if(!pw||pw.length<4)return alert('Password must be at least 4 characters.');
-  localStorage.setItem('admin_password',pw);
-  document.getElementById('newPwInput').value='';
-  alert('Password updated.');
-}
+
+renderAll();
 </script>
 </body>
 </html>
