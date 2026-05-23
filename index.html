@@ -266,17 +266,37 @@ function saveRegistration(data){
 }
 
 async function sendToSheet(data){
+  // Step 1 — send text data only first (fast, reliable)
   try{
-    const payload = {...data};
-    // Send screenshot separately if large, fallback gracefully
-    const body = JSON.stringify(payload);
+    const textOnly={
+      name:data.name, email:data.email, phone:data.phone,
+      date:data.date, slot:data.slot, amount:data.amount,
+      submitted:data.submitted, slotFill:data.slotFill,
+      screenshot:''
+    };
     await fetch(SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {'Content-Type':'text/plain'},
-      body: body
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify(textOnly)
     });
-  }catch(e){ console.warn('Sheet sync failed:', e); }
+  }catch(e){ console.warn('Sheet text sync failed:',e); }
+
+  // Step 2 — send screenshot separately to update Drive link
+  if(data.screenshot){
+    try{
+      await fetch(SHEET_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({
+          updateScreenshot:true,
+          submitted:data.submitted,
+          name:data.name,
+          screenshot:data.screenshot,
+          screenshotType:data.screenshotType
+        })
+      });
+    }catch(e){ console.warn('Drive upload failed:',e); }
+  }
 }
 
 function compressImage(file){
