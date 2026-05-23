@@ -165,7 +165,10 @@
 <script>
 function getMaxPerSlot(){ return parseInt(localStorage.getItem("max_per_slot"))||3; }
 
+let _configCache = null;
+
 function getConfig() {
+  if(_configCache) return _configCache;
   try {
     const saved = localStorage.getItem('admin_config');
     return saved ? JSON.parse(saved) : [];
@@ -196,15 +199,27 @@ function formatDate(str){
   return d.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
 
-function populateDates() {
+async function populateDates() {
   const sel=document.getElementById('date');
-  const config=getConfig();
-  if(!config.length){
+  sel.innerHTML='<option value="" disabled selected>— Loading dates… —</option>';
+  try{
+    const res=await fetch(SHEET_URL+'?action=config&t='+Date.now());
+    const data=await res.json();
+    if(Array.isArray(data)&&data.length){
+      _configCache=data;
+      localStorage.setItem('admin_config',JSON.stringify(data));
+    } else {
+      _configCache=getConfig();
+    }
+  }catch(e){
+    _configCache=getConfig();
+  }
+  if(!_configCache||!_configCache.length){
     sel.innerHTML='<option value="" disabled selected>— No dates available yet —</option>';
     return;
   }
   sel.innerHTML='<option value="" disabled selected>— Select a date —</option>';
-  config.forEach(c=>{
+  _configCache.forEach(c=>{
     const opt=document.createElement('option');
     opt.value=c.date; opt.textContent=formatDate(c.date);
     sel.appendChild(opt);
@@ -271,7 +286,7 @@ function handleFile(input){
   reader.readAsDataURL(file);
 }
 
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycby1qWkn9zAZCKyVD-5w8CBavC9XqS4qmU6FqUgu3yv8upnDddLIZIHtidgYEHjnZnLNIA/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycby8b3BHN9aCQEYkpeSfxE40S8SHdKk2MBGmV1OklqcJ05wv77yJ77JkhTvfrSrtAcnbJg/exec';
 
 function saveRegistration(data){
   try{
