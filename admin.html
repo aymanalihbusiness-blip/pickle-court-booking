@@ -244,7 +244,7 @@
 function getMaxPerSlot(){ return parseInt(localStorage.getItem('max_per_slot'))||3; }
 function getConfig(){ try{ const s=localStorage.getItem('admin_config'); return s?JSON.parse(s):[]; }catch(e){return[];} }
 function saveConfig(c){ localStorage.setItem('admin_config',JSON.stringify(c)); }
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyOe7YBQaepO7065pjU43PTNp8Df_o4nCm4OSSTr2MUZf52F7ODOo8iNdOcgHfiDjmT8Q/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwPMMMevkWonFN0E-8XNcO_0-8zJ8_Ml6AKww-pToaklz12GoEBZdEw6eMoD-kYqzhsog/exec';
 
 async function fetchRegistrations(){
   try{

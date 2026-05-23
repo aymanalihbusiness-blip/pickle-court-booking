@@ -255,7 +255,7 @@ function handleFile(input){
   reader.readAsDataURL(file);
 }
 
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbyOe7YBQaepO7065pjU43PTNp8Df_o4nCm4OSSTr2MUZf52F7ODOo8iNdOcgHfiDjmT8Q/exec';
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwPMMMevkWonFN0E-8XNcO_0-8zJ8_Ml6AKww-pToaklz12GoEBZdEw6eMoD-kYqzhsog/exec';
 
 function saveRegistration(data){
   try{
@@ -266,22 +266,21 @@ function saveRegistration(data){
 }
 
 async function sendToSheet(data){
-  // Step 1 — send text data only first (fast, reliable)
+  // Step 1 — send text data only (fast, reliable)
   try{
-    const textOnly={
-      name:data.name, email:data.email, phone:data.phone,
-      date:data.date, slot:data.slot, amount:data.amount,
-      submitted:data.submitted, slotFill:data.slotFill,
-      screenshot:''
-    };
     await fetch(SHEET_URL, {
       method:'POST', mode:'no-cors',
       headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify(textOnly)
+      body:JSON.stringify({
+        name:data.name, email:data.email, phone:data.phone,
+        date:data.date, slot:data.slot, amount:data.amount,
+        submitted:data.submitted, slotFill:data.slotFill,
+        uid:data.uid
+      })
     });
   }catch(e){ console.warn('Sheet text sync failed:',e); }
 
-  // Step 2 — send screenshot separately to update Drive link
+  // Step 2 — send screenshot separately for Drive upload
   if(data.screenshot){
     try{
       await fetch(SHEET_URL, {
@@ -289,7 +288,7 @@ async function sendToSheet(data){
         headers:{'Content-Type':'text/plain'},
         body:JSON.stringify({
           updateScreenshot:true,
-          submitted:data.submitted,
+          uid:data.uid,
           name:data.name,
           screenshot:data.screenshot,
           screenshotType:data.screenshotType
@@ -357,7 +356,8 @@ async function submitForm(){
     submitted:new Date().toLocaleString('en-PH'),
     slotFill:newCount+'/'+getMaxPerSlot(),
     screenshot:screenshotBase64,
-    screenshotType:file.type
+    screenshotType:"image/jpeg",
+    uid:Date.now()
   };
   saveRegistration({...regData, screenshot:'[image]'});
   await sendToSheet(regData);
