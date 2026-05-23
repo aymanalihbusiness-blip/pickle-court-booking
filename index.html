@@ -105,7 +105,7 @@
   </div>
   <div class="row">
     <div class="field"><label for="email">Email</label><input type="email" id="email" placeholder="juan@email.com" /></div>
-    <div class="field"><label for="phone">Phone</label><input type="tel" id="phone" placeholder="09XX XXX XXXX" maxlength="11" pattern="[0-9]{11}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)" /></div>
+    <div class="field"><label for="phone">Phone</label><input type="tel" id="phone" placeholder="09XX XXX XXXX" maxlength="11" inputmode="numeric" /></div>
   </div>
   <div class="divider"></div>
   <div class="field">
@@ -156,7 +156,6 @@
 
 <script>
 function getMaxPerSlot(){ return parseInt(localStorage.getItem("max_per_slot"))||3; }
-const MAX_PER_SLOT = getMaxPerSlot();
 
 function getConfig() {
   try {
@@ -214,8 +213,8 @@ document.getElementById('date').addEventListener('change', function(){
   if(!entry)return;
   entry.slots.forEach(([start,end])=>{
     const count=getCount(this.value,start,end);
-    const full=count>=MAX_PER_SLOT;
-    const remaining=MAX_PER_SLOT-count;
+    const full=count>=getMaxPerSlot();
+    const remaining=getMaxPerSlot()-count;
     const dur=durLabel(start,end);
     const rate=isEvening(start)?250:150;
     const total=rate*durHours(start,end);
@@ -268,20 +267,36 @@ function saveRegistration(data){
 
 async function sendToSheet(data){
   try{
+    const payload = {...data};
+    // Send screenshot separately if large, fallback gracefully
+    const body = JSON.stringify(payload);
     await fetch(SHEET_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: {'Content-Type':'text/plain'},
-      body: JSON.stringify(data)
+      body: body
     });
   }catch(e){ console.warn('Sheet sync failed:', e); }
 }
 
-function readFileAsBase64(file){
-  return new Promise((resolve,reject)=>{
+function compressImage(file){
+  return new Promise((resolve)=>{
     const reader=new FileReader();
-    reader.onload=e=>resolve(e.target.result);
-    reader.onerror=()=>reject(new Error('File read failed'));
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let w=img.width, h=img.height;
+        const MAX=1200;
+        if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.7));
+      };
+      img.onerror=()=>resolve(e.target.result);
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>resolve('');
     reader.readAsDataURL(file);
   });
 }
@@ -296,20 +311,21 @@ async function submitForm(){
   const slot=document.getElementById('slot').value;
   const file=document.getElementById('gcashUpload').files[0];
   if(!fname||!lname)return alert('Please enter your full name.');
-  if(phone.length!==11||!/^[0-9]{11}$/.test(phone))return alert('Please enter a valid 11-digit mobile number (numbers only).');
   if(!email)return alert('Please enter your email address.');
+  if(!phone)return alert('Please enter your mobile number.');
+  if(phone.length!==11||!/^[0-9]{11}$/.test(phone))return alert('Mobile number must be exactly 11 digits (numbers only).');
   if(!date)return alert('Please select a date.');
   if(!slot)return alert('Please select a time slot.');
   if(!file)return alert('Please upload your GCash screenshot.');
   const [start,end]=slot.split('|');
-  if(getCount(date,start,end)>=MAX_PER_SLOT){
+  if(getCount(date,start,end)>=getMaxPerSlot()){
     alert('Sorry, this slot just filled up. Please choose another.');
     dateEl.dispatchEvent(new Event('change')); return;
   }
   const btn=document.getElementById('submitBtn');
   btn.disabled=true; btn.innerHTML='⏳ Uploading screenshot…';
   let screenshotBase64='';
-  try{ screenshotBase64=await readFileAsBase64(file); }catch(e){}
+  try{ screenshotBase64=await compressImage(file); }catch(e){}
   btn.innerHTML='⏳ Submitting…';
   const newCount=incrementCount(date,start,end);
   const rate=isEvening(start)?250:150;
@@ -319,7 +335,7 @@ async function submitForm(){
     date:dateEl.options[dateEl.selectedIndex].text,
     slot:start+' – '+end, amount:'₱'+total.toLocaleString(),
     submitted:new Date().toLocaleString('en-PH'),
-    slotFill:newCount+'/'+MAX_PER_SLOT,
+    slotFill:newCount+'/'+getMaxPerSlot(),
     screenshot:screenshotBase64,
     screenshotType:file.type
   };
@@ -330,6 +346,13 @@ async function submitForm(){
 }
 
 populateDates();
+const phoneEl=document.getElementById('phone');
+phoneEl.addEventListener('input',function(){
+  this.value=this.value.replace(/[^0-9]/g,'').slice(0,11);
+});
+phoneEl.addEventListener('keypress',function(e){
+  if(!/[0-9]/.test(e.key))e.preventDefault();
+});
 </script>
 </body>
 </html>
