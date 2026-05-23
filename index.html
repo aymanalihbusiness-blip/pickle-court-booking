@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Court Booking Registration</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f4f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem 4rem;
+    color: #1a1a1a;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e4e4e0;
+    padding: 2rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  }
+
+  .form-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .form-sub {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 1.5rem;
+  }
+
+  .field { margin-bottom: 1.1rem; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #1a1a1a;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .field input:focus,
+  .field select:focus { border-color: #555; }
+
+  .field input::placeholder { color: #bbb; }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
+
+  .divider { height: 1px; background: #f0f0ec; margin: 1.25rem 0; }
+
+  .upload-zone {
+    border: 1.5px dashed #ccc;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .upload-zone:hover { background: #fafaf8; border-color: #aaa; }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 28px; margin-bottom: 6px; }
+  .upload-label { font-size: 14px; font-weight: 500; color: #333; margin-bottom: 3px; }
+  .upload-hint { font-size: 12px; color: #999; }
+  .preview-img {
+    max-width: 100%; max-height: 180px; border-radius: 8px;
+    margin-top: 12px; display: none; object-fit: contain;
+  }
+
+  .payment-box {
+    display: none;
+    border-radius: 10px;
+    border: 1px solid #e8e8e4;
+    background: #fafaf8;
+    padding: 1rem 1.25rem;
+    margin-top: 0.75rem;
+  }
+  .pay-section-label {
+    font-size: 11px; font-weight: 600; color: #888;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+  }
+  .pay-row {
+    display: flex; justify-content: space-between;
+    align-items: center; font-size: 14px; padding: 4px 0;
+  }
+  .pay-label { color: #777; }
+  .pay-val { font-weight: 500; color: #1a1a1a; }
+  .pay-total {
+    font-size: 18px; font-weight: 600; color: #1a1a1a;
+    border-top: 1px solid #e8e8e4; margin-top: 8px; padding-top: 8px;
+  }
+
+  .copy-btn {
+    font-size: 12px; padding: 3px 9px; cursor: pointer;
+    background: #fff; border: 1px solid #ddd; border-radius: 6px;
+    color: #555; margin-left: 8px; transition: background 0.1s;
+  }
+  .copy-btn:hover { background: #f5f5f2; }
+  .copy-btn.copied { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+
+  .notice {
+    font-size: 12px; border-radius: 8px;
+    padding: 9px 12px; margin-top: 10px;
+    line-height: 1.5;
+  }
+  .notice-eve {
+    background: #fff3f3; color: #b71c1c;
+    border: 1px solid #ffcdd2; display: none;
+  }
+  .notice-info {
+    background: #e8f4fd; color: #1565c0;
+    border: 1px solid #bbdefb;
+  }
+
+  .submit-btn {
+    width: 100%; padding: 0.75rem; font-size: 15px; font-weight: 600;
+    background: #1a1a1a; color: #fff; border: none;
+    border-radius: 10px; cursor: pointer; margin-top: 1rem;
+    transition: background 0.15s, opacity 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .submit-btn:hover { background: #333; }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .success-box {
+    display: none;
+    background: #e8f5e9; border: 1px solid #a5d6a7;
+    border-radius: 10px; padding: 1rem 1.25rem;
+    text-align: center; margin-top: 1rem;
+  }
+  .success-box p { font-size: 14px; color: #2e7d32; font-weight: 500; }
+
+  .loading-msg { font-size: 13px; color: #999; padding: 6px 0; display: none; }
+
+  option:disabled { color: #bbb; }
+  optgroup { font-weight: 600; }
+
+  .spots-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 1px 6px; border-radius: 20px; margin-left: 6px;
+  }
+  .spots-ok { background: #e8f5e9; color: #2e7d32; }
+  .spots-low { background: #fff8e1; color: #f57f17; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="form-title">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+    Booking Registration
+  </h1>
+  <p class="form-sub">Fill in your details, pick your slot, and send your GCash payment.</p>
+
+  <div class="row">
+    <div class="field"><label for="fname">First name</label><input type="text" id="fname" placeholder="Juan" /></div>
+    <div class="field"><label for="lname">Last name</label><input type="text" id="lname" placeholder="dela Cruz" /></div>
+  </div>
+  <div class="row">
+    <div class="field"><label for="email">Email</label><input type="email" id="email" placeholder="juan@email.com" /></div>
+    <div class="field"><label for="phone">Phone</label><input type="tel" id="phone" placeholder="09XX XXX XXXX" /></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="field">
+    <label for="date">Available dates</label>
+    <select id="date"><option value="" disabled selected>— Select a date —</option></select>
+  </div>
+
+  <div class="field">
+    <label for="slot">Time slot</label>
+    <select id="slot"><option value="" disabled selected>— Select a date first —</option></select>
+    <div class="loading-msg" id="loadingMsg">⏳ Checking availability…</div>
+  </div>
+
+  <div class="notice notice-info">
+    ℹ️ If there are more players on the court, any excess payment will be returned.
+  </div>
+  <div class="notice notice-eve" id="eveNotice">
+    ⚠️ <strong>Evening slot:</strong> No cancellations. No refunds. Please confirm your schedule before booking.
+  </div>
+
+  <div class="payment-box" id="paymentBox">
+    <div class="pay-section-label">Payment summary</div>
+    <div class="pay-row"><span class="pay-label">Slot</span><span class="pay-val" id="slotOut">—</span></div>
+    <div class="pay-row"><span class="pay-label">Duration</span><span class="pay-val" id="durOut">—</span></div>
+    <div class="pay-row"><span class="pay-label">Rate</span><span class="pay-val" id="rateOut">—</span></div>
+    <div class="pay-row pay-total"><span>Total</span><span id="totalOut">—</span></div>
+    <div class="divider" style="margin: 10px 0;"></div>
+    <div class="pay-section-label">Send payment to</div>
+    <div class="pay-row">
+      <span class="pay-label">GCash #</span>
+      <span class="pay-val">09276124459 <button class="copy-btn" onclick="copyNum()" id="copyBtn">Copy</button></span>
+    </div>
+    <div class="pay-row"><span class="pay-label">Account name</span><span class="pay-val">Ayman Alih</span></div>
+    <div class="pay-row"><span class="pay-label">Amount to send</span><span class="pay-val" id="amountOut">—</span></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="field">
+    <label>GCash payment screenshot</label>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="gcashUpload" accept="image/*" onchange="handleFile(this)" />
+      <div class="upload-icon">📷</div>
+      <div class="upload-label">Tap to upload screenshot</div>
+      <div class="upload-hint">PNG, JPG or HEIC — max 10MB</div>
+    </div>
+    <img class="preview-img" id="previewImg" alt="GCash payment preview" />
+  </div>
+
+  <button class="submit-btn" id="submitBtn" onclick="submitForm()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    Submit booking
+  </button>
+
+  <div class="success-box" id="successBox">
+    <p>✅ Booking submitted! We'll confirm your slot shortly.</p>
+  </div>
+</div>
+
+<script>
+/* ╔══════════════════════════════════════════════╗
+   ║         BACKEND CONFIG — EDIT HERE ONLY      ║
+   ╠══════════════════════════════════════════════╣
+   ║  MAX_PER_SLOT  — max bookings per slot       ║
+   ║  DATES         — "YYYY-MM-DD" format         ║
+   ║  SLOTS         — ["START", "END"] pairs      ║
+   ║  Pricing auto: 9AM–5PM ₱150/hr, 5PM+ ₱250   ║
+   ╚══════════════════════════════════════════════╝ */
+
+const MAX_PER_SLOT = 3;
+
+const CONFIG = [
+  {
+    date: "2026-06-07",
+    slots: [
+      ["9:00 AM",  "10:00 AM"],
+      ["9:00 AM",  "11:00 AM"],
+      ["1:00 PM",  "3:00 PM"],
+      ["3:00 PM",  "4:00 PM"]
+    ]
+  },
+  {
+    date: "2026-06-08",
+    slots: [
+      ["10:00 AM", "11:00 AM"],
+      ["10:00 AM", "12:00 PM"],
+      ["5:00 PM",  "7:00 PM"],
+      ["7:00 PM",  "8:00 PM"]
+    ]
+  },
+  {
+    date: "2026-06-14",
+    slots: [
+      ["1:00 PM",  "2:00 PM"],
+      ["1:00 PM",  "3:00 PM"],
+      ["6:00 PM",  "8:00 PM"]
+    ]
+  }
+];
+
+/* ══════════════════════════════════════════════ */
+
+function slotKey(date, start, end) {
+  const clean = s => s.replace(/[\s:]/g, '_');
+  return 'booking__' + date + '__' + clean(start) + '__' + clean(end);
+}
+
+function getCount(date, start, end) {
+  try {
+    return parseInt(localStorage.getItem(slotKey(date, start, end))) || 0;
+  } catch(e) { return 0; }
+}
+
+function incrementCount(date, start, end) {
+  const key = slotKey(date, start, end);
+  const next = getCount(date, start, end) + 1;
+  try { localStorage.setItem(key, String(next)); } catch(e) {}
+  return next;
+}
+
+function to24(t) {
+  const [time, period] = t.split(' ');
+  let [h, m] = time.split(':').map(Number);
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h + (m / 60);
+}
+
+function isEvening(t) { return to24(t) >= 17; }
+function durHours(s, e) { return to24(e) - to24(s); }
+function durLabel(s, e) { return durHours(s, e) === 1 ? '1 hour' : '2 hours'; }
+
+function formatDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function populateDates() {
+  const sel = document.getElementById('date');
+  CONFIG.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.date;
+    opt.textContent = formatDate(c.date);
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('date').addEventListener('change', function () {
+  const slotSel = document.getElementById('slot');
+  const payBox = document.getElementById('paymentBox');
+  const eveNotice = document.getElementById('eveNotice');
+
+  slotSel.innerHTML = '<option value="" disabled selected>— Pick a time slot —</option>';
+  payBox.style.display = 'none';
+  eveNotice.style.display = 'none';
+
+  const entry = CONFIG.find(c => c.date === this.value);
+  if (!entry) return;
+
+  entry.slots.forEach(([start, end]) => {
+    const count = getCount(this.value, start, end);
+    const full = count >= MAX_PER_SLOT;
+    const remaining = MAX_PER_SLOT - count;
+    const dur = durLabel(start, end);
+    const rate = isEvening(start) ? 250 : 150;
+    const total = rate * durHours(start, end);
+    const opt = document.createElement('option');
+    opt.value = start + '|' + end;
+    if (full) {
+      opt.textContent = start + ' – ' + end + '  ✗  FULL';
+      opt.disabled = true;
+    } else {
+      const spots = remaining === 1 ? '⚠ 1 spot left' : remaining + ' spots left';
+      opt.textContent = start + ' – ' + end + '  (' + dur + ')  —  ₱' + total.toLocaleString() + '  ·  ' + spots;
+    }
+    slotSel.appendChild(opt);
+  });
+});
+
+document.getElementById('slot').addEventListener('change', function () {
+  const payBox = document.getElementById('paymentBox');
+  const eveNotice = document.getElementById('eveNotice');
+  if (!this.value) { payBox.style.display = 'none'; eveNotice.style.display = 'none'; return; }
+  const [start, end] = this.value.split('|');
+  const dur = durLabel(start, end);
+  const hours = durHours(start, end);
+  const eve = isEvening(start);
+  const rate = eve ? 250 : 150;
+  const total = rate * hours;
+  document.getElementById('slotOut').textContent = start + ' – ' + end;
+  document.getElementById('durOut').textContent = dur;
+  document.getElementById('rateOut').textContent = '₱' + rate + '/hr (' + (eve ? 'Evening rate' : 'Day rate') + ')';
+  document.getElementById('totalOut').textContent = '₱' + total.toLocaleString();
+  document.getElementById('amountOut').textContent = '₱' + total.toLocaleString();
+  payBox.style.display = 'block';
+  eveNotice.style.display = eve ? 'block' : 'none';
+});
+
+function copyNum() {
+  navigator.clipboard.writeText('09276124459').then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    prompt('Copy this number:', '09276124459');
+  });
+}
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const p = document.getElementById('previewImg');
+    p.src = e.target.result;
+    p.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitForm() {
+  const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const dateEl = document.getElementById('date');
+  const date = dateEl.value;
+  const slot = document.getElementById('slot').value;
+  const file = document.getElementById('gcashUpload').files[0];
+
+  if (!fname || !lname) return alert('Please enter your full name.');
+  if (!email) return alert('Please enter your email address.');
+  if (!date) return alert('Please select a date.');
+  if (!slot) return alert('Please select a time slot.');
+  if (!file) return alert('Please upload your GCash screenshot.');
+
+  const [start, end] = slot.split('|');
+  const currentCount = getCount(date, start, end);
+  if (currentCount >= MAX_PER_SLOT) {
+    alert('Sorry, this slot just filled up. Please choose another.');
+    dateEl.dispatchEvent(new Event('change'));
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Submitting…';
+
+  incrementCount(date, start, end);
+  document.getElementById('successBox').style.display = 'block';
+  btn.innerHTML = '✅ Submitted';
+}
+
+populateDates();
+</script>
+</body>
+</html>
